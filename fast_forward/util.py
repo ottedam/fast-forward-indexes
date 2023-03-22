@@ -28,6 +28,7 @@ def interpolate(
     for q_id in r1:
         for doc_id in r1[q_id].keys() & r2[q_id].keys():
             results[q_id][doc_id] = (
+    #IMPORTANT:
                 alpha * r1[q_id][doc_id] + (1 - alpha) * r2[q_id][doc_id]
             )
     return Ranking(results, name=name, sort=sort, copy=False)

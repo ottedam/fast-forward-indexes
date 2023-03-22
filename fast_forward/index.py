@@ -274,6 +274,7 @@ class Index(abc.ABC):
                 # check if approximated max possible score is too low to make a difference
                 min_relevant_score = relevant_scores.get_nowait()
                 max_possible_score = (
+            #IMPORTANT: IMPLEMENT RRF
                     alpha * sparse_score + (1 - alpha) * max_dense_score
                 )
 
@@ -286,6 +287,7 @@ class Index(abc.ABC):
                 continue
 
             max_dense_score = max(max_dense_score, dense_score)
+            #IMPORTANT: IMPLEMENT RRF
             score = alpha * sparse_score + (1 - alpha) * dense_score
             result[id] = score
 
@@ -339,6 +341,7 @@ class Index(abc.ABC):
                         LOGGER.warning(f"{id} not indexed, skipping")
                     else:
                         dense_run[q_id][id] = score
+            #IMPORTANT: INTERPOLATE SCORE IF NOT EARLY STOPPING
             for a in alpha:
                 result[a] = interpolate(
                     ranking, Ranking(dense_run, sort=False), a, sort=True
