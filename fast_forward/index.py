@@ -274,7 +274,7 @@ class Index(abc.ABC):
                 # check if approximated max possible score is too low to make a difference
                 min_relevant_score = relevant_scores.get_nowait()
                 max_possible_score = (
-            #IMPORTANT: IMPLEMENT RRF
+            #IMPORTANT: IGNORE
                     alpha * sparse_score + (1 - alpha) * max_dense_score
                 )
 
@@ -287,7 +287,7 @@ class Index(abc.ABC):
                 continue
 
             max_dense_score = max(max_dense_score, dense_score)
-            #IMPORTANT: IMPLEMENT RRF
+            #IMPORTANT: IGNORE
             score = alpha * sparse_score + (1 - alpha) * dense_score
             result[id] = score
 
@@ -295,6 +295,7 @@ class Index(abc.ABC):
             relevant_scores.put_nowait(max(score, min_relevant_score))
         return result
 
+#IMPORTANT: GET SCORES FUNCTION
     def get_scores(
         self,
         ranking: Ranking,
@@ -318,55 +319,34 @@ class Index(abc.ABC):
         Returns:
             Dict[float, Ranking]: Alpha mapped to interpolated scores.
         """
+        print("custom FFI version")
+
+        # if alpha is a standalone float, convert it to a list
         if isinstance(alpha, float):
             alpha = [alpha]
-
-        if early_stopping and cutoff is None:
-            raise ValueError("A cut-off depth is required for early stopping.")
 
         t0 = time.time()
 
         # batch encode queries
-        q_id_list = list(ranking)
-        q_reps = self.encode([queries[q_id] for q_id in q_id_list])
+        q_id_list = list(ranking) # list of unique query ids in .txt file
+        q_reps = self.encode([queries[q_id] for q_id in q_id_list]) # array of arrays, where each inner array is the embedding of each query (768) dimensions  
 
         result = {}
-        if not early_stopping:
-            # here we can simply compute the dense scores once and interpolate for each alpha
-            dense_run = defaultdict(OrderedDict)
-            for q_id, q_rep in zip(tqdm(q_id_list), q_reps):
-                ids = list(ranking[q_id].keys())
-                for id, score in zip(ids, self._compute_scores(q_rep, ids)):
-                    if score is None:
-                        LOGGER.warning(f"{id} not indexed, skipping")
-                    else:
-                        dense_run[q_id][id] = score
-            #IMPORTANT: INTERPOLATE SCORE IF NOT EARLY STOPPING
-            for a in alpha:
-                result[a] = interpolate(
-                    ranking, Ranking(dense_run, sort=False), a, sort=True
-                )
-                if cutoff is not None:
-                    result[a].cut(cutoff)
-        else:
-            # early stopping requries the ranking to be sorted
-            # this should normally be the case anyway
-            if not ranking.is_sorted:
-                LOGGER.warning("input ranking not sorted. sorting...")
-                ranking.sort()
-
-            # since early stopping depends on alpha, we have to run the algorithm more than once
-            for a in alpha:
-                run = defaultdict(OrderedDict)
-                for q_id, q_rep in zip(tqdm(q_id_list), q_reps):
-                    ids, sparse_scores = zip(*ranking[q_id].items())
-                    dense_scores = self._compute_scores(q_rep, ids)
-                    scores = self._early_stopping(
-                        ids, dense_scores, sparse_scores, a, cutoff
-                    )
-                    for id, score in scores.items():
-                        run[q_id][id] = score
-                result[a] = Ranking(run, sort=True, copy=False)
+        # here we can simply compute the dense scores once and interpolate for each alpha
+        dense_run = defaultdict(OrderedDict) #OrderedDict keeps the elements in the order that they were in when first inserted
+        for q_id, q_rep in zip(tqdm(q_id_list), q_reps):
+            ids = list(ranking[q_id].keys())
+            for id, score in zip(ids, self._compute_scores(q_rep, ids)):
+                if score is None:
+                    LOGGER.warning(f"{id} not indexed, skipping")
+                else:
+                    dense_run[q_id][id] = score
+        #IMPORTANT: INTERPOLATE SCORE IF NOT EARLY STOPPING
+        for a in alpha:
+            result[a] = interpolate(
+                ranking, Ranking(dense_run, sort=False), a, sort=True
+            )
+            if cutoff is not None:
                 result[a].cut(cutoff)
 
         LOGGER.info(f"computed scores in {time.time() - t0}s")
