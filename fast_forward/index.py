@@ -300,6 +300,7 @@ class Index(abc.ABC):
         self,
         ranking: Ranking,
         queries: Dict[str, str],
+        method: str = "CC",
         alpha: Union[float, Iterable[float]] = 0.0,
         cutoff: int = None,
         early_stopping: bool = False,
@@ -308,7 +309,8 @@ class Index(abc.ABC):
 
         Args:
             ranking (Ranking): The ranking to compute scores for and interpolate with.
-            queries (Dict[str, str]): Query IDs mapped to queries.
+            queries (Dict[str, str]): Query IDs mapped to queries
+            method (str): One of CC (convex combination) or RRF (reciprocal rank fusion).
             alpha (Union[float, Iterable[float]], optional): Interpolation weight(s). Defaults to 0.0.
             cutoff (int, optional): Cut-off depth (documents/passages per query). Defaults to None.
             early_stopping (bool, optional): Whether to use early stopping. Defaults to False.
@@ -344,7 +346,7 @@ class Index(abc.ABC):
         #IMPORTANT: INTERPOLATE SCORE IF NOT EARLY STOPPING
         for a in alpha:
             result[a] = interpolate(
-                r1 = ranking, r2 = Ranking(dense_run, sort=False), alpha = a, sort=True
+                r1 = ranking, r2 = Ranking(dense_run, sort=False), method = method, alpha = a, sort=True
             )
             if cutoff is not None:
                 result[a].cut(cutoff) # keeps only the top-k scoring documents/passages
