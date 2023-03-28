@@ -152,5 +152,7 @@ class Ranking(object):
     
     #IMPORTANT: CUSTOM METHOD TO GET THE RANK OF A DOCUMENT GIVEN A QUERY
     def get_rank(self, q_id: str, doc_id: str) -> int:
-        self.sort()
-        return 3
+        if not self.is_sorted:
+            self.sort()
+        rank = list(self.run[q_id].keys()).index(doc_id) # retrieves the index (position) of the entry of "doc_id" within self.run[q_id]
+        return rank
