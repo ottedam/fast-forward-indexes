@@ -301,7 +301,8 @@ class Index(abc.ABC):
         ranking: Ranking,
         queries: Dict[str, str],
         method: str = "CC",
-        alpha: Union[float, Iterable[float]] = 0.0,
+        alpha: Union[float, Iterable[float]] = 0.2,
+        eta: Union[float, Iterable[float]] = 60,
         cutoff: int = None,
         early_stopping: bool = False,
     ) -> Dict[float, Ranking]:
@@ -312,6 +313,7 @@ class Index(abc.ABC):
             queries (Dict[str, str]): Query IDs mapped to queries
             method (str): One of CC (convex combination) or RRF (reciprocal rank fusion).
             alpha (Union[float, Iterable[float]], optional): Interpolation weight(s). Defaults to 0.0.
+            eta (Union[float, Iterable[float]], optional): Interpolation weight(s). Defaults to 0.0.
             cutoff (int, optional): Cut-off depth (documents/passages per query). Defaults to None.
             early_stopping (bool, optional): Whether to use early stopping. Defaults to False.
 
@@ -326,6 +328,12 @@ class Index(abc.ABC):
         # if alpha is a standalone float, convert it to a list
         if isinstance(alpha, float):
             alpha = [alpha]
+
+        weight = alpha # by default, we assume CC and use alpha as weight parameter
+        if method == "RRF": # if method is RRF, we use eta parameter instead
+            if isinstance(eta, float)|isinstance(eta, int):
+                eta = [eta]
+            weight = eta
 
         t0 = time.time()
 
@@ -344,12 +352,13 @@ class Index(abc.ABC):
                 else:
                     dense_run[q_id][id] = score
         #IMPORTANT: INTERPOLATE SCORE IF NOT EARLY STOPPING
-        for a in alpha:
-            result[a] = interpolate(
-                r1 = ranking, r2 = Ranking(dense_run, sort=False), method = method, alpha = a, sort=True
+        for w in weight: # iterate across all the given parameter values
+            print("w: ", w)
+            result[w] = interpolate(
+                r1 = ranking, r2 = Ranking(dense_run, sort=False), method = method, weight = w, sort=True
             )
             if cutoff is not None:
-                result[a].cut(cutoff) # keeps only the top-k scoring documents/passages
+                result[w].cut(cutoff) # keeps only the top-k scoring documents/passages
 
         LOGGER.info(f"computed scores in {time.time() - t0}s")
         return result

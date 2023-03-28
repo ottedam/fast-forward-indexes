@@ -8,7 +8,7 @@ LOGGER = logging.getLogger(__name__)
 
 
 def interpolate(
-    r1: Ranking, r2: Ranking, method: str, alpha: float = 0.2, eta: float = 0.6, name: str = None, sort: bool = True
+    r1: Ranking, r2: Ranking, method: str, weight: float, name: str = None, sort: bool = True
 ) -> Ranking:
     """Interpolate scores. For each query-doc pair:
         * If the pair has only one score, ignore it.
@@ -18,8 +18,7 @@ def interpolate(
         r1 (Ranking): Scores from the first retriever.
         r2 (Ranking): Scores from the second retriever.
         method (str): One of CC (convex combination) or RRF (reciprocal rank fusion)
-        alpha (float): Interpolation weight.
-        eta (float): Interpolation weight.
+        weight (float): Interpolation weight (alpha for CC and eta for RRF)
         name (str, optional): Ranking name. Defaults to None.
         sort (bool, optional): Whether to sort the documents by score. Defaults to True.
 
@@ -30,12 +29,12 @@ def interpolate(
     results = defaultdict(dict) 
     for q_id in r1:
         for doc_id in r1[q_id].keys() & r2[q_id].keys():
-                #IMPORTANT: RUN SELECTED METHOD
+            #IMPORTANT: RUN SELECTED METHOD
             if method == "CC":
                 #r1[q_id][doc_id] returns the SCORE of document doc_id to query q_id according to retrieval system r1
-                results[q_id][doc_id] = (alpha * r1[q_id][doc_id] + (1 - alpha) * r2[q_id][doc_id])
+                results[q_id][doc_id] = (weight * r1[q_id][doc_id] + (1 - weight) * r2[q_id][doc_id])
             elif method ==  "RRF":
-                results[q_id][doc_id] = (1/(eta + r1.get_rank(q_id=q_id, doc_id=doc_id))) + (1/(eta + r2.get_rank(q_id=q_id, doc_id=doc_id)))
+                results[q_id][doc_id] = (1/(weight + r1.get_rank(q_id=q_id, doc_id=doc_id))) + (1/(weight + r2.get_rank(q_id=q_id, doc_id=doc_id)))
             else:
                 raise ValueError('The interpolation method must be either "CC" or "RRF"')
             
