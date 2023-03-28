@@ -344,10 +344,10 @@ class Index(abc.ABC):
         #IMPORTANT: INTERPOLATE SCORE IF NOT EARLY STOPPING
         for a in alpha:
             result[a] = interpolate(
-                ranking, Ranking(dense_run, sort=False), a, sort=True
+                r1 = ranking, r2 = Ranking(dense_run, sort=False), alpha = a, sort=True
             )
             if cutoff is not None:
-                result[a].cut(cutoff)
+                result[a].cut(cutoff) # keeps only the top-k scoring documents/passages
 
         LOGGER.info(f"computed scores in {time.time() - t0}s")
         return result

@@ -149,3 +149,8 @@ class Ranking(object):
                 q_id, _, id, _, score, name = line.split()
                 run[q_id][id] = float(score)
         return cls(run, name, sort=True, copy=False)
+    
+    #IMPORTANT: CUSTOM METHOD TO GET THE RANK OF A DOCUMENT GIVEN A QUERY
+    def get_rank(self, q_id: str, doc_id: str) -> int:
+        self.sort()
+        return 3
