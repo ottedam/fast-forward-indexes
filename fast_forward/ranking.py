@@ -3,6 +3,7 @@ from pathlib import Path
 from copy import deepcopy
 from typing import Dict, Iterator
 from collections import OrderedDict, defaultdict
+from fast_forward.normalizer import normalize_run
 
 
 Run = Dict[str, Dict[str, float]]
@@ -156,3 +157,6 @@ class Ranking(object):
             self.sort()
         rank = list(self.run[q_id].keys()).index(doc_id) # retrieves the index (position) of the entry of "doc_id" within self.run[q_id]
         return rank
+
+    def normalize_run(self, type:str) -> None:
+        self.run = normalize_run(self.run, type)

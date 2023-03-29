@@ -15,7 +15,7 @@ from scipy.spatial.distance import cosine
 from fast_forward.ranking import Ranking
 from fast_forward.encoder import QueryEncoder
 from fast_forward.util import interpolate
-
+from fast_forward.normalizer import normalize_run
 
 LOGGER = logging.getLogger(__name__)
 
@@ -304,6 +304,7 @@ class Index(abc.ABC):
         alpha: Union[float, Iterable[float]] = 0.2,
         eta: Union[float, Iterable[float]] = 60,
         cutoff: int = None,
+        normalize: str = None,
         early_stopping: bool = False,
     ) -> Dict[float, Ranking]:
         """Compute corresponding dense scores for a ranking and interpolate.
@@ -351,7 +352,13 @@ class Index(abc.ABC):
                     LOGGER.warning(f"{id} not indexed, skipping")
                 else:
                     dense_run[q_id][id] = score
-        #IMPORTANT: INTERPOLATE SCORE IF NOT EARLY STOPPING
+
+        #IMPORTANT: NORMALIZE DENSE RUN
+        if normalize != None:
+            dense_run = normalize_run(dense_run,normalize)
+            ranking.normalize_run(normalize)
+
+        #IMPORTANT: INTERPOLATE SCORE
         for w in weight: # iterate across all the given parameter values
             print("w: ", w)
             result[w] = interpolate(
