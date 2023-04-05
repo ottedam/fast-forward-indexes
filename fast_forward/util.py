@@ -25,16 +25,22 @@ def interpolate(
     Returns:
         Ranking: Interpolated ranking.
     """
+    #r2.scores_to_file()
+
     assert r1.q_ids == r2.q_ids # both lists must have the same queries
     results = defaultdict(dict) 
+    #with open(r'C:/Users/Revi/Desktop/ranks.csv','a') as f1: # need "a" and not w to append to a file, if not will overwrite
+    #    writer=csv.writer(f1, delimiter=',',lineterminator='\n',)
     for q_id in r1:
         for doc_id in r1[q_id].keys() & r2[q_id].keys():
             #IMPORTANT: RUN SELECTED METHOD
             if method == "CC":
                 #r1[q_id][doc_id] returns the SCORE of document doc_id to query q_id according to retrieval system r1
-                results[q_id][doc_id] = (weight * r1[q_id][doc_id] + (1 - weight) * r2[q_id][doc_id])
+                results[q_id][doc_id] = (weight * r2[q_id][doc_id] + (1 - weight) * r1[q_id][doc_id])
             elif method ==  "RRF":
                 results[q_id][doc_id] = (1/(weight + r1.get_rank(q_id=q_id, doc_id=doc_id))) + (1/(weight + r2.get_rank(q_id=q_id, doc_id=doc_id)))
+                #row = [q_id,doc_id,r1.get_rank(q_id=q_id, doc_id=doc_id),r2.get_rank(q_id=q_id, doc_id=doc_id)]
+                #writer.writerow(row)
             else:
                 raise ValueError('The interpolation method must be either "CC" or "RRF"')
             

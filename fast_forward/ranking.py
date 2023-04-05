@@ -160,3 +160,13 @@ class Ranking(object):
 
     def normalize_run(self, type:str) -> None:
         self.run = normalize_run(self.run, type)
+
+    def scores_to_file(self) -> None:
+        with open(r'C:/Users/Revi/Desktop/dense_scores.csv','a') as f1: # need "a" and not w to append to a file, if not will overwrite
+            writer=csv.writer(f1, delimiter=',',lineterminator='\n',)
+            row = ["q_id","doc_id","score"]
+            writer.writerow(row)
+            for q_id in self.q_ids:
+                for doc_id in self.run[q_id]:
+                    row = [q_id,doc_id,self.run[q_id][doc_id]]
+                    writer.writerow(row)
