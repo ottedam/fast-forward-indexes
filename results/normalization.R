@@ -50,6 +50,11 @@ data %<>% mutate(mm_dense=(dense_score - min_dense)/(max_dense - min_dense))
 data %<>% mutate(tmm_dense=(dense_score)/(max_dense))
 data %<>% mutate(z_dense=(dense_score - mean_dense)/(std_dense))
 
+data %<>% group_by(q_id) %>% mutate(median_sparse=median(sparse_score), median_dense=median(dense_score), mad_sparse=mad(sparse_score), mad_dense=mad(dense_score))
+data %<>% mutate(robust_z_sparse=(sparse_score - median_sparse)/(mad_sparse))
+data %<>% mutate(robust_z_dense=(dense_score - median_dense)/(mad_dense))
+data %<>% mutate(hybrid_robust_z = alpha * robust_z_dense + (1-alpha) * robust_z_sparse)
+
 data %<>% mutate(hybrid_vanilla = alpha * dense_score + (1-alpha) * sparse_score) 
 data %<>% mutate(hybrid_mm = alpha * mm_dense + (1-alpha) * mm_sparse)
 data %<>% mutate(hybrid_tmm = alpha * tmm_dense + (1-alpha) * tmm_sparse)
@@ -59,13 +64,14 @@ data %>% select(q_id,doc_id,sparse_score,tmm_sparse,dense_score,tmm_dense) %>% g
 data %>% select(q_id,doc_id,sparse_score,tmm_sparse,dense_score,tmm_dense) %>% group_by() %>% summarise_at(c('dense_score','tmm_dense','sparse_score','tmm_sparse'),max)
 
 
-data %<>% select(q_id,doc_id,hybrid_vanilla,hybrid_mm,hybrid_tmm,hybrid_z) 
-data %<>% pivot_longer(cols=c(hybrid_mm:hybrid_z)) 
+data %<>% select(q_id, doc_id, hybrid_vanilla, hybrid_mm, hybrid_tmm, hybrid_z, hybrid_robust_z)
+data %<>% pivot_longer(cols=c(hybrid_mm:hybrid_robust_z))
 
 names <- c(
   `hybrid_mm` = "Min-Max Scaling",
   `hybrid_tmm` = "Theoretical Min-Max Scaling",
-  `hybrid_z` = "Z-Score")
+  `hybrid_z` = "Z-Score",
+  `hybrid_robust_z` = "Robust Z-Score")
 
 data %>% dplyr::filter(q_id == 673670) %>% 
   ggplot(aes(y=hybrid_vanilla,x=value))+
